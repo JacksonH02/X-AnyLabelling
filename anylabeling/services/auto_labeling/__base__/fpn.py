@@ -12,7 +12,8 @@ from anylabeling.app_info import __preferred_device__
 from ..engines.build_onnx_engine import OnnxBaseModel
 from ..types import AutoLabelingResult
 from scipy.ndimage import zoom
-
+from ..utils.version_check import (get_local_version, get_latest_version_from_github,
+                                   update_local_version, update_model_if_newer)
 
 class FPN(Model):
     class Meta:
@@ -37,6 +38,7 @@ class FPN(Model):
         self.pixel_mean = np.array([123.675, 116.28, 103.53])
         self.pixel_std = np.array([58.395, 57.12, 57.375])
         model_abs_path = self.get_model_abs_path(self.config, "model_path")
+        # print(model_abs_path)
         if not model_abs_path or not os.path.isfile(model_abs_path):
             raise FileNotFoundError(
                 QCoreApplication.translate(

@@ -1,0 +1,13 @@
+classes:
+- muscle
+display_name: TMIL_Muscle_Adaptive (fpn18)
+input_size:
+- 512
+- 512
+max_height: 512
+max_width: 512
+model_name: fpn18_SemiL_muscle_512.onnx
+model_path: https://api.github.com/repos/JacksonH02/X-AnyLabeling/releases/latest
+name: TMIL_Muscle_fpn18_adp-r20240228
+type: muscle_fpn
+version: v0.1.1

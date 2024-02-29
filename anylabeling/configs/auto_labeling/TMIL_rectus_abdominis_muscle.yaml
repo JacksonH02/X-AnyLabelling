@@ -1,7 +1,8 @@
 type: muscle_fpn
 name: TMIL_Muscle_fpn18-r20231127
 display_name: TMIL_RA_Muscle (fpn18)
-model_path: /home/jackson/anylabeling_data/models/segment_fpn18_us/fpn18_ra_muscle_512.onnx
+model_path: /home/jackson/anylabeling_data/models/segment_fpn18_us/fpn18_SemiL_muscle_512.onnx
+# /home/jackson/anylabeling_data/models/segment_fpn18_us/fpn18_ra_muscle_512.onnx
 
 input_size: [512, 512]
 max_width: 512

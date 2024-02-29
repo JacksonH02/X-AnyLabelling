@@ -81,6 +81,8 @@ class ModelManager(QObject):
                 ) as f:
                     model_config = yaml.safe_load(f)
                     model_config["config_file"] = config_file
+                    model_config['config_path'] = os.path.join(os.path.dirname(auto_labeling_configs.__file__),
+                                                               config_file_name)
             else:  # Config file is in local file system
                 with open(config_file, "r", encoding="utf-8") as f:
                     model_config = yaml.safe_load(f)

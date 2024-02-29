@@ -134,6 +134,8 @@ def main():
             base_name, suffix = os.path.splitext(file_name)
             if suffix.lower() not in IMG_FORMATS:
                 continue
+            if base_name + ".json" not in file_list:
+                continue
             img_file = os.path.join(args.img_path, file_name)
             if not args.json_path:
                 json_file = os.path.join(args.img_path, base_name+'.json')

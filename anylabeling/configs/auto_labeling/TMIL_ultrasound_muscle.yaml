@@ -1,7 +1,7 @@
 type: muscle_fpn
 name: TMIL_Muscle_fpn18-r20231127
 display_name: TMIL_Muscle (fpn18)
-model_path: https://github.com/JacksonH02/X-AnyLabeling/releases/download/V0.1.0/fpn18_us_muscle_512.onnx
+model_path: https://github.com/JacksonH02/X-AnyLabeling/releases/download/latest/fpn18_us_muscle_512.onnx
 
 input_size: [512, 512]
 max_width: 512

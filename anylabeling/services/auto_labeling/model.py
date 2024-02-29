@@ -1,10 +1,14 @@
 import logging
 import os
 import pathlib
+
+import requests
 import yaml
 import onnx
 import urllib.request
 from urllib.parse import urlparse
+from .utils.version_check import (get_local_version, get_latest_version_from_github,
+                                   update_local_version, update_model_if_newer)
 
 from PyQt5.QtCore import QCoreApplication
 
@@ -19,7 +23,6 @@ import socket
 socket.setdefaulttimeout(240)  # Prevent timeout when downloading models
 
 from abc import abstractmethod
-
 
 from PyQt5.QtCore import QFile, QObject
 from PyQt5.QtGui import QImage
@@ -78,6 +81,7 @@ class Model(QObject):
         """
         Get model absolute path from config path or download from url
         """
+
         # Try getting model path from config folder
         model_path = model_config[model_path_field_name]
 
@@ -114,8 +118,33 @@ class Model(QObject):
             return os.path.basename(a.path)
 
         filename = get_filename_from_url(model_path)
-        download_url = model_path
+        current_version = model_config.get("version")
+        updating = False
+        """ if the model is latest, need to check the latest version 
+         online and download the latest version if necessary"""
+        if filename == 'latest':
 
+            model_name = model_config.get('model_name')
+            filename = model_name
+            response = requests.get(model_path)
+            response.raise_for_status()
+            api_data = response.json()
+            latest_version = api_data['tag_name']
+            if latest_version > current_version:
+                avaliable_models = api_data['assets']
+                current_version = latest_version
+                for item in avaliable_models:
+                    if item['name'] == model_name:
+                        model_path = item['browser_download_url']
+                        updating = True
+
+                        self.on_message(
+                            QCoreApplication.translate(
+                                "Model", "New version found, downloading latest version..."
+                            )
+                        )
+
+        download_url = model_path
         # Create model folder
         home_dir = os.path.expanduser("~")
         model_abs_path = os.path.abspath(
@@ -127,7 +156,7 @@ class Model(QObject):
                 filename,
             )
         )
-        if os.path.exists(model_abs_path):
+        if os.path.exists(model_abs_path) and not updating:
             if model_abs_path.lower().endswith(".onnx"):
                 try:
                     onnx.checker.check_model(model_abs_path)
@@ -148,7 +177,7 @@ class Model(QObject):
         ellipsis_download_url = download_url
         if len(download_url) > 40:
             ellipsis_download_url = (
-                download_url[:20] + "..." + download_url[-20:]
+                    download_url[:20] + "..." + download_url[-20:]
             )
         logging.info(
             "Downloading %s to %s", ellipsis_download_url, model_abs_path
@@ -168,11 +197,14 @@ class Model(QObject):
             urllib.request.urlretrieve(
                 download_url, model_abs_path, reporthook=_progress
             )
+            # update the version number to the yaml file if updating is True
+
         except Exception as e:  # noqa
             print(f"Could not download {download_url}: {e}")
             self.on_message(f"Could not download {download_url}")
             return None
-
+        if updating:
+            update_local_version(current_version, model_config['config_path'])
         return model_abs_path
 
     def check_missing_config(self, config_names, config):
