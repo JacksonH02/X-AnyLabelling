@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="anylabel2" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="anylabel2" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Labelling" project-jdk-type="Python SDK" />
 </project>
