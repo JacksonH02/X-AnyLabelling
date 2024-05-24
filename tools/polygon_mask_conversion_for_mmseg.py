@@ -50,7 +50,7 @@ def find_index_by_exact_match(data_list, target_str):
         return -1  # Return -1 if not found
 
 
-def parse_files_mmseg(images_path, json_path, masks_path, img_format='.bmp'):
+def parse_files_mmseg(images_path, json_path, masks_path, img_format='.bmp', mask_format='.png'):
 
     mmseg_path = dict(masks_path=masks_path)
     mmseg_path['imgs_path'] = images_path
@@ -59,8 +59,9 @@ def parse_files_mmseg(images_path, json_path, masks_path, img_format='.bmp'):
     for root, dirs, files in os.walk(json_path):
         for file in files:
             if file.endswith('.json'):
-                json_paths.append(file)
-                json_files.append(os.path.basename(file)[:-4])
+                json_paths.append(os.path.join(root, file))
+                json_files.append(file[:-5])
+    # print(json_files)
     paired_json_files = []
     paired_img_files = []
     paired_save_path_imgs = []
@@ -69,6 +70,7 @@ def parse_files_mmseg(images_path, json_path, masks_path, img_format='.bmp'):
     for root, dirs, files in os.walk(images_path):
         for file in files:
             base_name, suffix = os.path.splitext(os.path.basename(file))
+
             if suffix.lower() not in IMG_FORMATS:
                 continue
             # check the match json file and img file
@@ -76,10 +78,11 @@ def parse_files_mmseg(images_path, json_path, masks_path, img_format='.bmp'):
             if json_index == -1:
                 continue
             paired_json_path = json_paths[json_index]
+
             paired_img_path = os.path.join(root, file)
             relative_path = os.path.relpath(paired_img_path, images_path)
-            destination_path_mask = os.path.join(masks_path, 'labels', relative_path)
-            destination_path_mask255 = os.path.join(masks_path, 'labels255', relative_path)
+            destination_path_mask = os.path.join(masks_path, 'labels', relative_path[:-4] + mask_format)
+            destination_path_mask255 = os.path.join(masks_path, 'labels255', relative_path[:-4] + mask_format)
             destination_path_img = os.path.join(masks_path, 'images', relative_path[:-4] + img_format)
 
             os.makedirs(os.path.dirname(destination_path_mask), exist_ok=True)
@@ -90,6 +93,7 @@ def parse_files_mmseg(images_path, json_path, masks_path, img_format='.bmp'):
             paired_save_path_imgs.append(destination_path_img)
             paired_save_path_masks.append(destination_path_mask)
             paired_save_path_mask255s.append(destination_path_mask255)
+    print(paired_save_path_mask255s)
     return [paired_img_files, paired_json_files, paired_save_path_imgs,
             paired_save_path_masks, paired_save_path_mask255s]
 
@@ -212,15 +216,8 @@ def main():
 
     converter = PolygonMaskConversion(args.epsilon_factor)
     MODE_MMSEG = args.mmseg
-    if MODE_MMSEG:
-        mmseg_path = dict(base_path=args.mask_path)
-        images_folders = args.img_path.split('/')
-        images_folders = [item for item in images_folders if item != '']
-        last_two_folders = '/'.join(images_folders[-2:])  # Get the last two folders
-        mmseg_path['img_path'] = os.path.join('images', last_two_folders)
-        mmseg_path['label_path'] = os.path.join('labels', last_two_folders)
-
-        # print('/'.join(last_two_folders))
+    # print(MODE_MMSEG)
+    # print('/'.join(last_two_folders))
 
     if args.mode == "mask2poly":
         file_list = os.listdir(args.mask_path)
@@ -233,26 +230,27 @@ def main():
         if MODE_MMSEG:
             imgs, jsons, imgs_save, masks_save, mask255s_save = parse_files_mmseg(args.img_path, args.json_path,
                                                                                   args.mask_path)
-            for img, json, img_save, mask_save, mask255_save in tqdm(imgs, jsons, imgs_save, masks_save, mask255s_save,
+            combined_iterables = zip(imgs, jsons, imgs_save, masks_save, mask255s_save)
+            for img, json, img_save, mask_save, mask255_save in tqdm(combined_iterables,
                                                                      desc='Converting files', unit='file',
                                                                      colour='blue'):
                 converter.polygon_to_mask_mmseg(img, json, img_save, mask_save, mask255_save)
-
-        os.makedirs(args.mask_path, exist_ok=True)
-        file_list = os.listdir(args.img_path)
-        for file_name in tqdm(file_list, desc='Converting files', unit='file', colour='blue'):
-            base_name, suffix = os.path.splitext(file_name)
-            if suffix.lower() not in IMG_FORMATS:
-                continue
-            if base_name + ".json" not in file_list:
-                continue
-            img_file = os.path.join(args.img_path, file_name)
-            if not args.json_path:
-                json_file = os.path.join(args.img_path, base_name + '.json')
-            else:
-                json_file = os.path.join(args.json_path, base_name + '.json')
-            mask_file = os.path.join(args.mask_path, file_name)
-            converter.polygon_to_mask(img_file, mask_file, json_file)
+        else:
+            os.makedirs(args.mask_path, exist_ok=True)
+            file_list = os.listdir(args.img_path)
+            for file_name in tqdm(file_list, desc='Converting files', unit='file', colour='blue'):
+                base_name, suffix = os.path.splitext(file_name)
+                if suffix.lower() not in IMG_FORMATS:
+                    continue
+                if base_name + ".json" not in file_list:
+                    continue
+                img_file = os.path.join(args.img_path, file_name)
+                if not args.json_path:
+                    json_file = os.path.join(args.img_path, base_name + '.json')
+                else:
+                    json_file = os.path.join(args.json_path, base_name + '.json')
+                mask_file = os.path.join(args.mask_path, file_name)
+                converter.polygon_to_mask(img_file, mask_file, json_file)
 
     end_time = time.time()
     print(f"Conversion completed successfully!")
